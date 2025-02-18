@@ -1,0 +1,31 @@
+services:
+  redis:
+    image: redis:7.4.2-alpine
+    container_name: celery_redis
+  django:
+    build:
+      context: ./
+    container_name: django_celery_project
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app/
+    ports:
+      - "8000:8000"
+    environment:
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+      - DEBUG=TRUE
+      - SECRET_KEY=django-insecure-xxo2w+z6dh@psgeh$$y8a!c-!0=e%hm^1td-%)&tn)ho1z!pqg
+    depends_on:
+      - redis
+  celery:
+    build:
+      context: ./
+    container_name: celery
+    volumes:
+      - .:/app/
+    environment:
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+      - DEBUG=TRUE
+      - SECRET_KEY=django-insecure-xxo2w+z6dh@psgeh$$y8a!c-!0=e%hm^1td-%)&tn)ho1z!pqg
+    depends_on:
+      - redis
