@@ -21,6 +21,7 @@ services:
     build:
       context: ./
     container_name: celery
+    command: celery --app=config worker -l INFO
     volumes:
       - .:/app/
     environment:
