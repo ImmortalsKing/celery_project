@@ -2,13 +2,14 @@ services:
   redis:
     image: redis:7.4.2-alpine
     container_name: celery_redis
+
   django:
     build:
-      context: ./
+      context: ./eshop
     container_name: django_celery_project
     command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     volumes:
-      - .:/app/
+      - ./eshop/:/app/
     ports:
       - "8000:8000"
     environment:
@@ -17,16 +18,44 @@ services:
       - SECRET_KEY=django-insecure-xxo2w+z6dh@psgeh$$y8a!c-!0=e%hm^1td-%)&tn)ho1z!pqg
     depends_on:
       - redis
+      - rabbitmq
+
+
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+
   celery:
     build:
-      context: ./
+      context: ./eshop
     container_name: celery
-    command: celery --app=config worker -l INFO
+    command: celery --app=config worker -l INFO -Q tasks
     volumes:
-      - .:/app/
+      - ./eshop:/app/
     environment:
       - ALLOWED_HOSTS=localhost,127.0.0.1
       - DEBUG=TRUE
       - SECRET_KEY=django-insecure-xxo2w+z6dh@psgeh$$y8a!c-!0=e%hm^1td-%)&tn)ho1z!pqg
     depends_on:
       - redis
+      - django
+      - rabbitmq
+
+
+#  stand_alone_celery:
+#    build:
+#      context: ./celery_worker
+#    container_name: stand_alone_celery
+#    command: celery --app=celery_base worker -l INFO -Q queue2
+#    volumes:
+#      - ./celery_worker:/app/
+#    environment:
+#      - BROKER_URL=redis://redis:6379/0
+#      - RESULT_BACKEND=redis://redis:6379/0
+#    depends_on:
+#      - redis
+#      - django
